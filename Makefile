@@ -1,7 +1,10 @@
 all: executable
 
-executable: convert_to_array.o cuda_density.o cuda_meshestimator.o main.o cudapathestimator.o index.o inner_control_mesh.o cuda_meshweights.o Payoff.o plot_high_bias.o cuda_mesh_generation.o
-	nvcc convert_to_array.o cuda_density.o cuda_meshestimator.o main.o cudapathestimator.o index.o inner_control_mesh.o cuda_meshweights.o Payoff.o plot_high_bias.o cuda_mesh_generation.o -arch=sm_35 -o executable 
+executable: convert_to_array.o cuda_density.o cuda_meshestimatortwo.o main.o cudapathestimator.o index.o inner_control_mesh.o cuda_meshweights.o Payoff.o plot_high_bias.o cuda_mesh_generation.o meshOuterControl.o
+	nvcc convert_to_array.o cuda_density.o cuda_meshestimatortwo.o main.o cudapathestimator.o index.o inner_control_mesh.o cuda_meshweights.o Payoff.o plot_high_bias.o meshOuterControl.o cuda_mesh_generation.o -arch=sm_35 -o executable 
+
+meshOuterControl.o: meshOuterControl.cpp
+	g++ -c meshOuterControl.cpp
 
 main.o: main.cu
 	nvcc -c main.cu -arch=sm_35
@@ -15,8 +18,8 @@ convert_to_array.o: convert_to_array.cpp
 cuda_density.o: cuda_density.cpp
 	g++ -c cuda_density.cpp
 
-cuda_meshestimator.o: cuda_meshestimator.cpp
-	g++ -c cuda_meshestimator.cpp 
+cuda_meshestimatortwo.o: cuda_meshestimatortwo.cu
+	nvcc -c cuda_meshestimatortwo.cu -arch=sm_35 
 
 cudapathestimator.o: cudapathestimator.cu
 	nvcc -c cudapathestimator.cu -arch=sm_35
@@ -33,8 +36,8 @@ Payoff.o: Payoff.cpp
 plot_high_bias.o: plot_high_bias.cpp
 	g++ -c plot_high_bias.cpp
 
-cuda_meshweights.0: cuda_meshweights.cpp
-	g++ -c cuda_meshweights.cpp
+cuda_meshweights.o: cuda_meshweights.cpp
+	g++ -c cuda_meshweights.cpp 
 
 clean:
 	rm -rf *o mesh

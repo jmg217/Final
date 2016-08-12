@@ -39,7 +39,7 @@ return h;
 }
 */
 //this function returns the high bias mesh price
-double MeshEstimator(double strike, double r, double delta_t, int b, double m, double* X, double* W, double* V, double asset_amount[], const PayOff& thePayOff, int num_assets){
+double MeshEstimator(double strike, double r, double delta_t, int b, double m, double* X, double* W, double* V, double asset_amount[], const PayOff& thePayOff, int num_assets, std::vector<double>& EuroVals){
 Containers Matrix = matrix;
 Containers Vector = vector;
 double H; //payoff variable 
@@ -117,6 +117,14 @@ sum+=*two_dim_index(V, (m_int-1), k, m, b);
 //this is the high bias option value at time 0
 V_0=(1/((double)b))*sum;
 
+//Calculate estimate european value
+sum=0;
+for(int hh=0; hh<b; hh++){
+//sum+=V[m-1][k];
+sum+=thePayOff(X, asset_amount, m-1, hh, m, b,  Matrix, num_assets)*exp(-r*delta_t*(m));
+}
+double euroval=(1/((double)b))*sum;
+EuroVals.push_back(euroval);
 
 return V_0;
 }

@@ -16,10 +16,13 @@
 
 
 #define PI 3.14159265358979323846
+double outer_control_mesh(std::vector<double>& Vvector, std::vector<double>& EuroVals, int N, int b, double EuroGeoOption );
 
 void mesh_generation(int b, int num_assets, double m, double X0[], double sigma[], double delta[], double asset_amount[], double* X, double strike, double r, double delta_t, curandState_t* States, curandState_t* statesi, int threads);
 
 void meshweights(double* W, double m, int b, double sigma[], double delta[], double r, double delta_t, double* X, int num_assets, double* weight_denominator);
+
+//void meshweights(double* W, double m, int b, double sigma[], double delta[], double r, double delta_t, double* X, int num_assets, double* weight_denominator, int threads);
 
 void one_dim_array(std::vector< double > &vals, double array[], int N);
 
@@ -33,7 +36,10 @@ double* two_dim_index(double* vector, int i, int j, double m, int b);
 //This function is contained within meshestimator.cpp
 double MeshEstimator(double strike, double r, double delta_t, int b, double m,  std::vector<std::vector< std::vector<double> > >& X, std::vector< std::vector< std::vector<double> > >& W, std::vector< std::vector<double> >& V, std::vector<double>& asset_amount, const PayOff& thePayOff);
 */
-double MeshEstimator(double strike, double r, double delta_t, int b, double m,  double* X, double* W, double* V, double asset_amount[], const PayOff& thePayOff, int num_assets);
+
+//double MeshEstimator(double strike, double r, double delta_t, int b, double m,  double* X, double* W, double* V, double asset_amount[], const PayOff& thePayOff, int num_assets, std::vector <double>& EuroVals);
+
+double MeshEstimator(double strike, double r, double delta_t, int b, double m, double* X, double* W, double* V, double asset_amount[], int num_assets);
 
 /*
 //This function is contained within patestimator.cpp.
@@ -78,6 +84,9 @@ srand((unsigned)time(NULL));
 
 //Now we read in the parameters from settings.txt
 //new code
+
+clock_t begin=clock();
+
 std::ifstream setting( "settings.txt" );
 std::string line;
 std::vector<std::string> settings;
@@ -90,7 +99,7 @@ while(std::getline( setting, line))
     }
 setting.close();
 
-double double_num;
+//double double_num;
 int integer; 
 
 std::vector < double > X0V;
@@ -98,6 +107,7 @@ std::vector < double > deltaV;
 std::vector <double> sigmaV;
 std::vector <double> asset_amountV;
 
+std::vector <double> EuroVals;
 
 
 std::istringstream ss(settings[0]);
@@ -111,7 +121,7 @@ double T = atof(settings[1].c_str());
 double m = atof(settings[2].c_str());
 double delta_t=T/m;
 //int Rn;
-double v_0, V_0, v_sum, sum_Z=0, vtotal_sum=0, Vtotal_sum=0;
+double v_0, V_0, vtotal_sum=0, Vtotal_sum=0;
  //Z, Xi, Xj, v_sum, sum_Z=0, vtotal_sum=0, Vtotal_sum=0;
 double r= atof(settings[3].c_str());
 
@@ -139,6 +149,7 @@ while(std::getline(ss4, token, ','))
     {
         asset_amountV.push_back(atof(token.c_str()));
     }
+double EuroGeoOption=atof(settings[13].c_str());
 
 if(X0V.size() != num_assets || sigmaV.size() != num_assets || deltaV.size() !=num_assets || asset_amountV.size() !=num_assets){
           std::cout<<"Either the starting price, volatility, number of assets or dividend yield was not specified for all assets"<<std::endl;
@@ -160,7 +171,7 @@ for(integer=0; integer<sigmaV.size(); integer++){
 for(integer=0; integer<deltaV.size(); integer++){
     std::cout<<"dividend yield="<<deltaV[integer]<<std::endl;
 }
-std::cout<<"number of iterations over path estimator="<<Path_estimator_iterations<<"\n"<<"strike  price="<<strike<<"\n"<<"number of nodes per time step="<<b<<"\n"<<"number mesh generations="<<N<<"\n"<<"Number of Assets="<<num_assets<<std::endl; 
+std::cout<<"number of iterations over path estimator="<<Path_estimator_iterations<<"\n"<<"strike  price="<<strike<<"\n"<<"number of nodes per time step="<<b<<"\n"<<"number mesh generations="<<N<<"\n"<<"Number of Assets="<<num_assets<<"\n"<<"European Option="<<EuroGeoOption<<std::endl; 
 
 for(integer=0; integer<asset_amountV.size(); integer++){
     std::cout<<"asset amount="<<asset_amountV[integer]<<std::endl;
@@ -170,7 +181,7 @@ for(integer=0; integer<asset_amountV.size(); integer++){
 //// DECLARE AN INSTANCE OF THE PAYOFF////
 //////////////////////////////////////////
 
-GeometricPayOffCall payoff(strike);
+//GeometricPayOffCall payoff(strike);
 //GeometricPayOffPut *payoff_dev;  
 
 // CONVERT TO ARRAYS
@@ -360,7 +371,11 @@ for(int q=1; q<m; q++){
 	}
 }
 
-V_0=MeshEstimator(strike, r, delta_t, b, m, X, W, V, asset_amount, payoff, num_assets);//high bias option price
+//V_0=MeshEstimator(strike, r, delta_t, b, m, X, W, V, asset_amount, payoff, num_assets, EuroVals);//high bias option price
+
+//V_0= MeshEstimator(strike, r, delta_t, b, m, X, W, V, asset_amount[], num_assets);
+
+V_0=MeshEstimator(strike, r, delta_t, b, m, X, W, V, asset_amount, num_assets);
 Vvector.push_back(V_0);//vector containing high bias option prices
 Vtotal_sum+=V_0;
 
@@ -391,6 +406,10 @@ print_high_payoff(b, m, X, V, asset_amount,W);
 V_0=(1/double(N))*Vtotal_sum;
 v_0=(1/double(N))*vtotal_sum;
 
+if(EuroGeoOption>0){
+std::cout<<"here"<<std::endl;
+V_0= outer_control_mesh(Vvector, EuroVals, N, b, EuroGeoOption );
+}
 //calculate errors
 double std_div_V=0, std_div_v=0, squaresumV=0, squaresumv=0, Verror=0, verror=0;
 
@@ -401,16 +420,22 @@ squaresumv+=(vvector[h]-v_0)*(vvector[h]-v_0);
 std_div_V=sqrt((1/double(N))*squaresumV); //standard deviation of V
 std_div_v=sqrt((1/double(N))*squaresumv); //standard deviation of v
 
-Verror=quantile*std_div_V*(1/sqrt(double(N)));
-verror=quantile*std_div_v*(1/sqrt(double(N)));
+double standardErrorV=std_div_V*(1/sqrt(double(N)));
+double standardErrorv=std_div_v*(1/sqrt(double(N)));
+
+Verror=quantile*standardErrorV;
+verror=quantile*standardErrorv;
 
 std::cout<<"V(N)_0="<<V_0<<"\t"<<"V error="<<Verror<<std::endl;
 std::cout<<"v(N)_0="<<v_0<<"\t"<<"v error="<<verror<<std::endl;
 
-
+double pointEst=(V_0+v_0)/2;
+double EstimatedError=((Verror+V_0)-(v_0-verror))/(2*pointEst);
+clock_t end =clock();
+double elapsedtime=double(end-begin) / CLOCKS_PER_SEC;
 std::ofstream outFile("results.txt", std::ios_base::app | std::ios_base::out);
 
-outFile << N <<"\t"<< b <<"\t"<< Path_estimator_iterations<<"\t"<< V_0 <<"\t"<< v_0 <<"\t"<< Verror+V_0 <<"\t"<< v_0-verror << std::endl;
+outFile << N <<"\t"<< b <<"\t"<< Path_estimator_iterations<<"\t"<<X0[0]<<"\t" << v_0 <<"\t"<< standardErrorv <<"\t"<< V_0 <<"\t"<< standardErrorV <<"\t"<< v_0-verror<<"\t"<<Verror+V_0 <<"\t"<<pointEst<<"\t"<<EstimatedError<<"\t" <<elapsedtime<< std::endl;
 
 outFile.close();
 

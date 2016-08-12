@@ -153,6 +153,7 @@ if(blockDim.x*blockIdx.x + threadIdx.x==0){printf("result at i=%i , = %i\n",i, t
 		}
 */
 	sum = *two_dim_indexGPU(weight_denominator_device, i, h, m-1, b);
+	if(sum==0){printf("division by zero in weights function of path estimator");}
 	w_s = (((double)b)*w_s)/sum;	
 //if(blockDim.x*blockIdx.x + threadIdx.x==0){printf("w_s=%f \n", w_s);}	
 	//*two_dim_indexGPU(S_Weights, i, h, m, b)=w_s;
@@ -169,7 +170,7 @@ __global__ void PathEstimatorKernel(double* X_device, double* weight_denominator
 int idx =blockDim.x*blockIdx.x + threadIdx.x;
 //if(blockDim.x*blockIdx.x + threadIdx.x==N+1){printf("n+1 outside \n");}
 if(idx<N){
-
+//printf("inside \n");
 //if(blockDim.x*blockIdx.x + threadIdx.x==N-1){printf("n-1 \n");}
 //if(blockDim.x*blockIdx.x + threadIdx.x==N+1){printf("n+1 inside \n");}
 
@@ -238,7 +239,7 @@ do {
 			// NEED TO CHANGE THE RANDOM NUMBER GENERATOR	
 			//Z=distribution(generator);
 			Z=curand_normal_double(&states[idx]);
-
+//printf("for idx=%i, r=%f",idx,Z);
 //printf("random number for idx %i is %f",idx,Z);
 
 			S_i=X0_device[ll] +  (r-delta_device[ll]-0.5*pow(sigma_device[ll], 2))*delta_t + sigma_device[ll]*sqrt(delta_t)*Z;
@@ -261,16 +262,17 @@ do {
 			S_new[jj]=S_i;
 		}
 	}
-
+//printf("inside \n");
 //if(idx==0){printf("before the call, m =%i /n", m);}
 if(i<m-1){
 
 //S_weights(tempvec, S_Weights, X, S, m, b, sigma, delta, delta_t, asset_amount, r, i  );
 //S_weights(S_Weights, X_device, S, m, b, sigma_device, delta_device, delta_t, num_assets, r, i );
+//right
 S_weights(S_Weights, X_device, S_new, m, b, sigma_device, delta_device, delta_t, num_assets, r, i, weight_denominator_device);
 
 }
-
+//printf("inside \n");
 double con_val=0; //continuation value variable
 	sum=0;
 
@@ -281,9 +283,12 @@ double con_val=0; //continuation value variable
 	else{
 		for(int k=0; k<b; k++){	
 			//weight= * two_dim_indexGPU(S_Weights, i, k, m, b);
+			//right
 			weight= S_Weights[k];
+			
 			//con_val=V[(m-1)-i-1][k];
 			con_val= *two_dim_indexGPU(V_device, (m-1-i-1), k, m, b);
+			//con_val=0;
 			sum+=(weight) * (con_val); 			
 		}
 	
@@ -294,9 +299,10 @@ double con_val=0; //continuation value variable
 //	C=(1/(double)b)*con_val;
 	}	
 	
-
+//printf("inside \n");
 //H=Payoff(S, strike, asset_amount, i)*exp(-r*delta_t*((i+1)));
 //H=thePayOff(S, i, 0, m, num_assets, Vector, num_assets)*exp(-r*delta_t*((i+1)));
+//H=0;
 H= GeometricPayOffCallV(S_new, m, num_assets, num_assets, strike)*exp(-r*delta_t*((i+1)));
 
 i=i+1;
@@ -316,7 +322,7 @@ delete[] S_new;
 //delete[] S_old;
 delete[] S_Weights;
 //return v_0;
-
+//printf("inside \n");
 }
 
 
@@ -328,7 +334,10 @@ double PathEstimator(double strike, double r, double delta_t, int b, double m, d
 
 
 //m=int(m);
-//printf("at the start of pathestimator m=%f /n", m);
+
+//for(int test=0; test<((m-1)*b); test++){
+//printf("at the start of pathestimator den=%f /n", weight_denominator[test]);
+//}
 //printf("Ib serial X[0][0][0]= %f \n",*three_dim_index(X,0,0,0,m,b));
 cudaError_t error = cudaGetLastError();
 
@@ -338,7 +347,7 @@ cudaError_t error = cudaGetLastError();
     printf("found at line %d\n", __LINE__);
     exit(1);
   }
-;
+
 
 int N= Path_estimator_iterations;
 
@@ -464,13 +473,19 @@ error = cudaGetLastError();
     printf("found at line %d\n", __LINE__);
     exit(1);
   }
-
+//printf("inside \n");
 cudaDeviceSetLimit(cudaLimitMallocHeapSize, 80000000*sizeof(double));
 //size_t size;
 //cudaDeviceGetLimit(&size, cudaLimitMallocHeapSize);
     //printf("Heap size found to be %d\n",(int)size);
 //printf("after");
+
+//for(int test=0; test<V_N; test++){
+//printf("N=%i, strike=%f, r=%f, delta_t=%f, num_a=%i, b=%i", N, strike, r, delta_t, num_assets,b);
+//}
 PathEstimatorKernel<<<gridDim, blockDim>>>(X_device, weight_denominator_device, V_device, delta_device, sigma_device, X0_device, N, strike, r, delta_t, b,  m_int, num_assets, states, results_dev, asset_amount_device);
+
+
 
 cudaDeviceSynchronize();
 
@@ -483,7 +498,7 @@ error = cudaGetLastError();
 	printf("found at line %d\n", __LINE__);
     exit(1);
   }
-
+//printf("here");
 cudaMemcpy(results, results_dev, sizeof(double)*N, cudaMemcpyDeviceToHost);
 
 error = cudaGetLastError();

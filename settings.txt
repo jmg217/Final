@@ -11,17 +11,18 @@ The dividend yeild=
 The volatility=
 0.4,0.4,0.4,0.4,0.4
 The number of times we iterated over the path estimator=
-1024
+32000
 The strike price (dollars)=
 100
 The number of nodes per time step=
-1024
+3200
 The number of times we run the programme=
-5
+25
 1-alpha/2 quantile of the standard normal distribution N(0,1)=
-1.96
+1.64
 Number of underlying assets=
 5
 Amounts of each asset=
 0.2,0.2,0.2,0.2,0.2
-
+European Option Price (if none available enter 0)=
+0

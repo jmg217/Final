@@ -17,7 +17,8 @@ double inner_control_mesh(int i, int j, int b, double r, double delta_t, double 
 
 int m_int= (int)m;
 double ControlMeshContinVal=0;
-
+//double outersum=0;//new
+//double true_stock_expectation_sum=0;//new
 double sum=0, ContinVal=0, stock_expectation=0, true_stock_expectation=0, numerator=0, denominator=0, beta=0;
    
 for(int k=0; k<b; k++){
@@ -29,17 +30,26 @@ for(int k=0; k<b; k++){
 ContinVal=(1/((double)b))*sum; 
 
 sum=0;
-   
+//true_stock_expectation_sum=0;
+//outersum=0;
+//for(int ll=0; ll< num_assets; ll++){  //new 
+//sum=0;
 for(int l=0; l<b; l++){
                    
         //sum+=(W[(m-i)][l][j])*exp(X[m-i][l][0]); //m-i when i=1 is 10-1=9.when i=9 m-i=1. we get V_0 separately by using W[0][k][j]                         
-	sum+=(*three_dim_index(W, (m_int-i), l, j, m, b, b)) * exp((*three_dim_index(X, (m_int-i), l, 0, m, b, num_assets)));
+	sum+=(*three_dim_index(W, (m_int-i), l, j, m, b, b)) * exp((*three_dim_index(X, (m_int-i), l,0 , m, b, num_assets))); //old
+	//sum+=(*three_dim_index(W, (m_int-i), l, j, m, b, b)) * exp((*three_dim_index(X, (m_int-i), l,ll , m, b, num_assets)));//new
+	
 }
-
-stock_expectation=(1/((double)b))*sum; 
+//outersum+=(1/((double)b))*sum; //new
+//true_stock_expectation_sum+=exp(*three_dim_index(X, (m_int-i-1), j, ll, m, b, num_assets)) * exp(r*delta_t);//new
+//}//new
+stock_expectation=(1/((double)b))*sum; //old
+//stock_expectation=(1/((double)num_assets))*outersum;//new
 
 //true_stock_expectation=exp(X[m-i-1][j][0])*exp(r*delta_t);
-true_stock_expectation=exp(*three_dim_index(X, (m_int-i-1), j, 0, m, b, num_assets)) * exp(r*delta_t);
+true_stock_expectation=exp(*three_dim_index(X, (m_int-i-1), j, 0, m, b, num_assets)) * exp(r*delta_t);//old
+//true_stock_expectation=(1/((double)num_assets))*true_stock_expectation_sum;
 
 for(int p=0; p<b; p++){
 

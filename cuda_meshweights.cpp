@@ -93,6 +93,11 @@ for(int I=0; I<m; I++){
 
 //std::cout<<"outside 2"<<std::endl;
 }
+//int W_N=b*(m-1);
+//for(int test=0; test<W_N; test++){
+//printf("weights=%f\n",weight_denominator[test]);
+//}
+
 //std::cout<<"outside 3"<<std::endl;
 delete[] sortvector;
 //std::cout<<"end"<<std::endl;
